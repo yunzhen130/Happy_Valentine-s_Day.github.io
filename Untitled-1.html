@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Valentine's Day! </title>
+    <style>
+        body { background-color: #fff0f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; overflow: hidden; touch-action: manipulation; }
+        .card { background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 40px rgba(255, 75, 110, 0.2); text-align: center; width: 360px; max-height: 95vh; overflow-y: auto; }
+        h2, h3 { color: #ff4d6d; margin: 10px 0; }
+        .menu-btn { background-color: #ff4d6d; color: white; border: none; padding: 15px; border-radius: 25px; margin: 10px auto; cursor: pointer; font-size: 16px; width: 90%; display: block; transition: 0.3s; font-weight: bold; }
+        .menu-btn:disabled { background-color: #ffb3c1; cursor: not-allowed; opacity: 0.7; }
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .tile { aspect-ratio: 1/1; background: #ff4d6d; display: flex; align-items: center; justify-content: center; font-size: 24px; color: transparent; border-radius: 12px; cursor: pointer; transition: 0.4s; }
+        .tile.flipped { color: white; background: #ff85a1; transform: rotateY(180deg); }
+        .rps-btn { font-size: 30px; margin: 5px; background: white; border: 2px solid #ffb6c1; border-radius: 50%; width: 65px; height: 65px; cursor: pointer; }
+        input { padding: 12px; border-radius: 15px; border: 2px solid #ffb3c1; text-align: center; width: 80%; font-size: 16px; outline: none; margin-bottom: 10px; }
+        .back-btn { margin-top: 15px; background: #ced4da; color: white; border: none; padding: 8px 20px; border-radius: 15px; cursor: pointer; }
+        canvas { border: 3px solid #ffb3c1; border-radius: 20px; background: #fff; display: block; margin: 0 auto; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="login-box" class="card">
+        <h2>❤️ Valentine's Day ❤️</h2>
+        <p>Enter this special date</p>
+        <input type="text" id="password" placeholder="YYYYMMDD">
+        <button class="menu-btn" onclick="unlock()">Start</button>
+    </div>
+
+    <div id="game-menu" class="card" style="display:none;">
+        <h3>Game Map</h3>
+        <button id="btn-1" class="menu-btn" onclick="showScreen('memory-game'); startMemoryGame();">Level 1: Memory Game</button>
+        <button id="btn-2" class="menu-btn" disabled onclick="showScreen('rps-game')">Level 2: Rock Paper Scissors</button>
+        <button id="btn-3" class="menu-btn" disabled onclick="showScreen('flappy-game'); initFlappy();">Level 3: Stupid Bird</button>
+        <button id="btn-4" class="menu-btn" disabled onclick="showScreen('catch-game'); startCatchGame();">Level 4: Bunny & Cake</button>
+        <button id="btn-final" class="menu-btn" style="display:none; background: #ff0054;" onclick="showScreen('final-message')">🎁 Final Message</button>
+    </div>
+
+    <div id="memory-game" class="card" style="display:none;">
+        <h3>Level 1: Memory</h3>
+        <div id="grid" class="grid-container"></div>
+        <button class="back-btn" onclick="backToMenu()">Back</button>
+    </div>
+
+    <div id="rps-game" class="card" style="display:none;">
+        <h3>Level 2: RPS</h3>
+        <p>Wins: <span id="win-count">0</span>/3</p>
+        <div id="rps-display" style="font-size: 50px; margin: 15px;">❓</div>
+        <button class="rps-btn" onclick="playRPS('✊')">✊</button>
+        <button class="rps-btn" onclick="playRPS('✌️')">✌️</button>
+        <button class="rps-btn" onclick="playRPS('🖐️')">🖐️</button>
+        <br><button class="back-btn" onclick="backToMenu()">Back</button>
+    </div>
+
+    <div id="flappy-game" class="card" style="display:none;">
+        <h3>Level 3: Stupid Bird</h3>
+        <p>Score: <span id="flappy-score">0</span> / 5</p>
+        <canvas id="flappyCanvas" width="300" height="300"></canvas>
+        <p id="flappy-hint" style="color: #ff4d6d; font-weight: bold; margin-top: 10px;">Click to START!</p>
+        <button class="back-btn" onclick="backToMenu()">Back</button>
+    </div>
+
+    <div id="catch-game" class="card" style="display:none;">
+        <h3>Level 4: Tiny Bunny Catch 🐰</h3>
+        <p>Score: <span id="catch-score">0</span> / 15</p>
+        <canvas id="catchCanvas" width="300" height="350"></canvas>
+        <p style="font-size: 14px; margin-top: 10px;">Move the Tiny Bunny to catch & cake!</p>
+        <button class="back-btn" onclick="backToMenu()">Back</button>
+    </div>
+
+    <div id="final-message" class="card" style="display:none;">
+        <h2 style="color: #ff0054;"> ❤️</h2>
+        <p style="text-align: left; line-height: 1.6;">
+            寶貝，恭喜你完成所有挑戰！你在曼徹斯特也要開開心心喔！這份小遊戲代表我對你滿滿的愛，希望你會喜歡這個驚喜。情人節快樂！❤️
+        </p>
+        <button class="menu-btn" onclick="location.reload()">Replay</button>
+    </div>
+
+    <script>
+        let currentProgress = 1;
+        let gameLoopId;
+        let isFlappyRunning = false;
+        let rpsWins = 0;
+
+        function unlock() {
+            if (document.getElementById('password').value === '20260214') showScreen('game-menu');
+            else alert('Wrong date!!');
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            updateMenuButtons();
+        }
+
+        function backToMenu() {
+            cancelAnimationFrame(gameLoopId);
+            isFlappyRunning = false;
+            showScreen('game-menu');
+        }
+
+        function updateMenuButtons() {
+            if (currentProgress >= 2) document.getElementById('btn-2').disabled = false;
+            if (currentProgress >= 3) document.getElementById('btn-3').disabled = false;
+            if (currentProgress >= 4) document.getElementById('btn-4').disabled = false;
+            if (currentProgress >= 5) document.getElementById('btn-final').style.display = 'block';
+        }
+
+        function startMemoryGame() {
+            const grid = document.getElementById('grid'); grid.innerHTML = ''; 
+            let matches = 0; let flipped = [];
+            const icons = ['❤️', '💖', '🌹', '🍫', '💍', '💌'];
+            let cards = [...icons, ...icons].sort(() => Math.random() - 0.5);
+            cards.forEach(icon => {
+                const tile = document.createElement('div'); tile.className = 'tile'; tile.dataset.icon = icon;
+                tile.onclick = function() {
+                    if (this.classList.contains('flipped') || flipped.length === 2) return;
+                    this.classList.add('flipped'); this.innerText = this.dataset.icon; flipped.push(this);
+                    if (flipped.length === 2) {
+                        if (flipped[0].dataset.icon === flipped[1].dataset.icon) {
+                            matches++; flipped = [];
+                            if (matches === 6) { currentProgress = 2; setTimeout(() => { alert("Level 1 Clear!"); showScreen('rps-game'); }, 500); }
+                        } else { setTimeout(() => { flipped.forEach(t => { t.classList.remove('flipped'); t.innerText = ''; }); flipped = []; }, 600); }
+                    }
+                };
+                grid.appendChild(tile);
+            });
+        }
+
+        function playRPS(user) {
+            const pc = ['✊', '✌️', '🖐️'][Math.floor(Math.random()*3)];
+            document.getElementById('rps-display').innerText = `${user} vs ${pc}`;
+            if ((user==='✊'&&pc==='✌️')||(user==='✌️'&&pc==='🖐️')||(user==='🖐️'&&pc==='✊')) {
+                rpsWins++; document.getElementById('win-count').innerText = rpsWins;
+                if(rpsWins >= 3) { currentProgress = 3; setTimeout(() => { alert("Level 2 Clear!"); showScreen('flappy-game'); initFlappy(); }, 300); }
+            }
+        }
+
+        function initFlappy() {
+            isFlappyRunning = false;
+            const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#e0f7fa"; ctx.fillRect(0, 0, 300, 300);
+            drawBird(ctx, 50, 150);
+            canvas.onclick = () => { if(!isFlappyRunning) startFlappyGame(); };
+        }
+        function drawBird(ctx, x, y) {
+            ctx.fillStyle = "#6d6d6d"; ctx.beginPath(); ctx.arc(x, y - 12, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#4a4a4a"; ctx.beginPath(); ctx.ellipse(x - 8, y + 2, 12, 6, Math.PI / 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(x + 4, y - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.moveTo(x + 2, y + 1); ctx.quadraticCurveTo(x + 8, y + 8, x + 2, y + 15); ctx.lineTo(x - 1, y + 8); ctx.fill();
+        }
+        function startFlappyGame() {
+            isFlappyRunning = true; const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
+            let bird = { x: 50, y: 150, v: 0, g: 0.18, score: 0 }; let pipes = [];
+            canvas.onclick = (e) => { e.preventDefault(); bird.v = -3.8; };
+            function run() {
+                if (!isFlappyRunning) return;
+                ctx.fillStyle = "#e0f7fa"; ctx.fillRect(0, 0, 300, 300);
+                bird.v += bird.g; bird.y += bird.v; drawBird(ctx, bird.x, bird.y);
+                if (pipes.length === 0 || pipes[pipes.length - 1].x < 140) pipes.push({ x: 300, y: Math.random() * 120 + 60, passed: false });
+                pipes.forEach((p) => {
+                    p.x -= 1.8; ctx.fillStyle = "#ffb6c1"; ctx.fillRect(p.x, 0, 35, p.y); ctx.fillRect(p.x, p.y + 110, 35, 300);
+                    if (bird.y < 0 || bird.y > 300 || (bird.x + 6 > p.x && bird.x - 6 < p.x + 35 && (bird.y - 6 < p.y || bird.y + 6 > p.y + 110))) {
+                        isFlappyRunning = false; alert("Oops! Try again."); initFlappy();
+                    }
+                    if (!p.passed && p.x < bird.x) { p.passed = true; bird.score++; document.getElementById('flappy-score').innerText = bird.score; }
+                });
+                if (bird.score >= 5) { isFlappyRunning = false; currentProgress = 4; setTimeout(() => { alert("Level 3 Clear!"); showScreen('catch-game'); startCatchGame(); }, 300); }
+                else { pipes = pipes.filter(p => p.x > -40); gameLoopId = requestAnimationFrame(run); }
+            }
+            run();
+        }
+
+        // --- Level 4: Tiny Jellycat Bunny Catch ---
+        function startCatchGame() {
+            const canvas = document.getElementById('catchCanvas'); const ctx = canvas.getContext('2d');
+            let bunnyX = 150; let score = 0; let cakes = []; let speed = 3.2;
+            document.getElementById('catch-score').innerText = score;
+            canvas.onmousemove = (e) => { const rect = canvas.getBoundingClientRect(); bunnyX = e.clientX - rect.left; };
+            canvas.ontouchmove = (e) => { const rect = canvas.getBoundingClientRect(); bunnyX = e.touches[0].clientX - rect.left; e.preventDefault(); };
+
+            function drawJellycatBunny(x) {
+                const y = 320; // 稍微向下移，感覺是站在底部
+                // Ears (bashful bunny floppy ears - made narrower and longer)
+                ctx.fillStyle = "#e5e5e5";
+                ctx.beginPath(); ctx.ellipse(x - 10, y - 8, 5, 18, 0.25, 0, Math.PI * 2); ctx.fill(); 
+                ctx.beginPath(); ctx.ellipse(x + 10, y - 8, 5, 18, -0.25, 0, Math.PI * 2); ctx.fill();
+                // Tiny body/head combo (circular)
+                ctx.fillStyle = "#f0f0f0";
+                ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
+                // Little black eyes (placed lower for cuteness)
+                ctx.fillStyle = "black";
+                ctx.beginPath(); ctx.arc(x - 4, y - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + 4, y - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+                // Tiny pink nose
+                ctx.fillStyle = "#ffb6c1";
+                ctx.beginPath(); ctx.arc(x, y + 2, 1.5, 0, Math.PI * 2); ctx.fill();
+                // Chubby cheeks/feet (very small)
+                ctx.fillStyle = "#f0f0f0";
+                ctx.beginPath(); ctx.arc(x - 7, y + 12, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + 7, y + 12, 4, 0, Math.PI * 2); ctx.fill();
+            }
+
+            function runCatch() {
+                ctx.clearRect(0, 0, 300, 350); drawJellycatBunny(bunnyX);
+                if (Math.random() < 0.07) {
+                    const isTrap = Math.random() < 0.25;
+                    cakes.push({ x: Math.random() * 260 + 20, y: -20, type: isTrap ? '💣' : '🎂' });
+                }
+                cakes.forEach((c, i) => {
+                    c.y += speed; ctx.font = "24px Arial"; ctx.fillText(c.type, c.x, c.y);
+                    // Collision box is now smaller to match tiny bunny
+                    if (c.y > 300 && c.y < 340 && Math.abs(c.x - bunnyX) < 18) {
+                        if (c.type === '💣') { alert("Boom!"); score = 0; speed = 3.2; cakes = []; }
+                        else { score++; speed += 0.12; }
+                        cakes.splice(i, 1); document.getElementById('catch-score').innerText = score;
+                    }
+                });
+                if (score >= 15) { currentProgress = 5; cancelAnimationFrame(gameLoopId); setTimeout(() => { alert("Congratulations! ❤️"); showScreen('final-message'); }, 300); }
+                else { cakes = cakes.filter(c => c.y < 360); gameLoopId = requestAnimationFrame(runCatch); }
+            }
+            runCatch();
+        }
+    </script>
+</body>
+</html>
