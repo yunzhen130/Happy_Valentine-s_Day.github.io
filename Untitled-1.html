@@ -11,14 +11,12 @@
         .menu-btn { background-color: #ff4d6d; color: white; border: none; padding: 15px; border-radius: 25px; margin: 10px auto; cursor: pointer; font-size: 16px; width: 100%; display: block; transition: 0.3s; font-weight: bold; }
         .menu-btn:disabled { background-color: #ffb3c1; cursor: not-allowed; opacity: 0.7; }
         
-        /* 增加最小高度防止塌陷 */
         .grid-container { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
             gap: 8px; 
             margin-top: 15px; 
             min-height: 250px; 
-            visibility: visible !important;
         }
 
         .tile { 
@@ -27,16 +25,18 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 28px; /* 稍微加大字體 */
+            font-size: 28px; 
             color: transparent; 
             border-radius: 12px; 
             cursor: pointer; 
             transition: transform 0.4s, background-color 0.2s;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
+            user-select: none; 
+            -webkit-user-select: none; 
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* 強制顯示內容 */
         .tile.flipped { 
             color: #ffffff !important; 
             background-color: #ff85a1 !important; 
@@ -53,7 +53,7 @@
 
     <div id="login-box" class="card">
         <h2>❤️ Valentine's Day ❤️</h2>
-        <p>Enter our special date</p>
+        <p>Enter our special date (20260214)</p>
         <input type="text" id="password" placeholder="YYYYMMDD">
         <button class="menu-btn" onclick="unlock()">Start</button>
     </div>
@@ -87,19 +87,20 @@
         <h3>Level 3: Valentine Bird</h3>
         <p>Score: <span id="flappy-score">0</span> / 5</p>
         <canvas id="flappyCanvas" width="300" height="300"></canvas>
-        <p style="font-size: 14px; color: #ff4d6d; margin-bottom: 10px; font-weight: bold;">Slide Bunny to catch cakes! 🎂</p>
+        <p id="flappy-hint" style="color: #ff4d6d; font-weight: bold; margin-top: 10px;">Tap to Jump!</p>
         <button class="back-btn" onclick="backToMenu()">Back</button>
     </div>
 
     <div id="catch-game" class="card" style="display:none;">
         <h3>Level 4: Tiny Bunny Catch 🐰</h3>
         <p>Score: <span id="catch-score">0</span> / 15</p>
+        <p style="font-size: 14px; color: #ff4d6d; margin-bottom: 10px; font-weight: bold;">Slide Bunny to catch cakes! 🎂</p>
         <canvas id="catchCanvas" width="300" height="350"></canvas>
         <button class="back-btn" onclick="backToMenu()">Back</button>
     </div>
 
     <div id="final-message" class="card" style="display:none;">
-        <h2 style="color: #ff0054;">For H❤️</h2>
+        <h2 style="color: #ff0054;">❤️</h2>
         <p style="text-align: left; line-height: 1.6;">
             寶！❤️
         </p>
@@ -137,7 +138,6 @@
             if (currentProgress >= 5) document.getElementById('btn-final').style.display = 'block';
         }
 
-        // --- Level 1 穩定強化版 ---
         function startMemoryGame() {
             const grid = document.getElementById('grid');
             grid.innerHTML = ''; 
@@ -151,38 +151,42 @@
                 tile.className = 'tile';
                 tile.dataset.icon = icon;
                 
-                tile.onclick = function(e) {
-                    e.preventDefault(); // 防止手機端雙擊縮放
-                    if (this.classList.contains('flipped') || flipped.length === 2) return;
+                const handleFlip = function(e) {
+                    if (e && e.type === 'touchend') e.preventDefault();
+                    if (tile.classList.contains('flipped') || flipped.length === 2) return;
                     
-                    this.classList.add('flipped');
-                    this.textContent = this.dataset.icon; // 使用 textContent 較穩定
-                    flipped.push(this);
+                    requestAnimationFrame(() => {
+                        tile.classList.add('flipped');
+                        tile.textContent = tile.dataset.icon;
+                        flipped.push(tile);
 
-                    if (flipped.length === 2) {
-                        if (flipped[0].dataset.icon === flipped[1].dataset.icon) {
-                            matches++;
-                            flipped = [];
-                            if (matches === 6) {
-                                currentProgress = 2;
-                                setTimeout(() => { alert("Level 1 Clear!"); showScreen('rps-game'); }, 500);
-                            }
-                        } else {
-                            setTimeout(() => {
-                                flipped.forEach(t => {
-                                    t.classList.remove('flipped');
-                                    t.textContent = '';
-                                });
+                        if (flipped.length === 2) {
+                            if (flipped[0].dataset.icon === flipped[1].dataset.icon) {
+                                matches++;
                                 flipped = [];
-                            }, 600);
+                                if (matches === 6) {
+                                    currentProgress = 2;
+                                    setTimeout(() => { alert("Level 1 Clear!"); showScreen('rps-game'); }, 500);
+                                }
+                            } else {
+                                setTimeout(() => {
+                                    flipped.forEach(t => {
+                                        t.classList.remove('flipped');
+                                        t.textContent = '';
+                                    });
+                                    flipped = [];
+                                }, 600);
+                            }
                         }
-                    }
+                    });
                 };
+
+                tile.onclick = handleFlip;
+                tile.ontouchend = handleFlip;
                 grid.appendChild(tile);
             });
         }
 
-        // Level 2 RPS
         function playRPS(user) {
             const pc = ['✊', '✌️', '🖐️'][Math.floor(Math.random()*3)];
             document.getElementById('rps-display').innerText = `${user} vs ${pc}`;
@@ -192,7 +196,6 @@
             }
         }
 
-        // Level 3 Bird
         function initFlappy() {
             isFlappyRunning = false;
             const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
@@ -229,7 +232,6 @@
             run();
         }
 
-        // Level 4 Catch
         function startCatchGame() {
             const canvas = document.getElementById('catchCanvas'); const ctx = canvas.getContext('2d');
             let bunnyX = 150; let score = 0; let cakes = []; let speed = 3.2;
