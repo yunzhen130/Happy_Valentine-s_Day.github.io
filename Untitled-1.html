@@ -10,9 +10,39 @@
         h2, h3 { color: #ff4d6d; margin: 10px 0; }
         .menu-btn { background-color: #ff4d6d; color: white; border: none; padding: 15px; border-radius: 25px; margin: 10px auto; cursor: pointer; font-size: 16px; width: 100%; display: block; transition: 0.3s; font-weight: bold; }
         .menu-btn:disabled { background-color: #ffb3c1; cursor: not-allowed; opacity: 0.7; }
-        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; min-height: 200px; }
-        .tile { aspect-ratio: 1/1; background: #ff4d6d; display: flex; align-items: center; justify-content: center; font-size: 24px; color: transparent; border-radius: 12px; cursor: pointer; transition: transform 0.4s; }
-        .tile.flipped { color: white !important; background: #ff85a1 !important; transform: rotateY(180deg); }
+        
+        /* 增加最小高度防止塌陷 */
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 8px; 
+            margin-top: 15px; 
+            min-height: 250px; 
+            visibility: visible !important;
+        }
+
+        .tile { 
+            aspect-ratio: 1/1; 
+            background: #ff4d6d; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 28px; /* 稍微加大字體 */
+            color: transparent; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: transform 0.4s, background-color 0.2s;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        /* 強制顯示內容 */
+        .tile.flipped { 
+            color: #ffffff !important; 
+            background-color: #ff85a1 !important; 
+            transform: rotateY(180deg); 
+        }
+
         .rps-btn { font-size: 30px; margin: 5px; background: white; border: 2px solid #ffb6c1; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; }
         input { padding: 12px; border-radius: 15px; border: 2px solid #ffb3c1; text-align: center; width: 100%; font-size: 16px; outline: none; margin-bottom: 10px; box-sizing: border-box; }
         .back-btn { margin-top: 15px; background: #ced4da; color: white; border: none; padding: 8px 20px; border-radius: 15px; cursor: pointer; }
@@ -30,7 +60,7 @@
 
     <div id="game-menu" class="card" style="display:none;">
         <h3>Adventure Map</h3>
-        <button id="btn-1" class="menu-btn" onclick="showScreen('memory-game'); startMemoryGame();">Level 1: Memory Game</button>
+        <button id="btn-1" class="menu-btn" onclick="showScreen('memory-game'); setTimeout(startMemoryGame, 100);">Level 1: Memory Game</button>
         <button id="btn-2" class="menu-btn" disabled onclick="showScreen('rps-game')">Level 2: Rock Paper Scissors</button>
         <button id="btn-3" class="menu-btn" disabled onclick="showScreen('flappy-game'); initFlappy();">Level 3: Valentine Bird</button>
         <button id="btn-4" class="menu-btn" disabled onclick="showScreen('catch-game'); startCatchGame();">Level 4: Bunny & Cake</button>
@@ -69,9 +99,9 @@
     </div>
 
     <div id="final-message" class="card" style="display:none;">
-        <h2 style="color: #ff0054;">To My Dearest ❤️</h2>
+        <h2 style="color: #ff0054;">❤️</h2>
         <p style="text-align: left; line-height: 1.6;">
-            寶貝，恭喜你完成挑戰！你在曼徹斯特也要開開心心喔！情人節快樂！❤️
+            寶！❤️
         </p>
         <button class="menu-btn" onclick="location.reload()">Replay</button>
     </div>
@@ -107,27 +137,52 @@
             if (currentProgress >= 5) document.getElementById('btn-final').style.display = 'block';
         }
 
+        // --- Level 1 穩定強化版 ---
         function startMemoryGame() {
-            const grid = document.getElementById('grid'); grid.innerHTML = ''; 
-            let matches = 0; let flipped = [];
+            const grid = document.getElementById('grid');
+            grid.innerHTML = ''; 
+            let matches = 0;
+            let flipped = [];
             const icons = ['❤️', '💖', '🌹', '🍫', '💍', '💌'];
             let cards = [...icons, ...icons].sort(() => Math.random() - 0.5);
+
             cards.forEach(icon => {
-                const tile = document.createElement('div'); tile.className = 'tile'; tile.dataset.icon = icon;
-                tile.onclick = function() {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.icon = icon;
+                
+                tile.onclick = function(e) {
+                    e.preventDefault(); // 防止手機端雙擊縮放
                     if (this.classList.contains('flipped') || flipped.length === 2) return;
-                    this.classList.add('flipped'); this.innerText = this.dataset.icon; flipped.push(this);
+                    
+                    this.classList.add('flipped');
+                    this.textContent = this.dataset.icon; // 使用 textContent 較穩定
+                    flipped.push(this);
+
                     if (flipped.length === 2) {
                         if (flipped[0].dataset.icon === flipped[1].dataset.icon) {
-                            matches++; flipped = [];
-                            if (matches === 6) { currentProgress = 2; setTimeout(() => { alert("Level 1 Clear!"); showScreen('rps-game'); }, 500); }
-                        } else { setTimeout(() => { flipped.forEach(t => { t.classList.remove('flipped'); t.innerText = ''; }); flipped = []; }, 600); }
+                            matches++;
+                            flipped = [];
+                            if (matches === 6) {
+                                currentProgress = 2;
+                                setTimeout(() => { alert("Level 1 Clear!"); showScreen('rps-game'); }, 500);
+                            }
+                        } else {
+                            setTimeout(() => {
+                                flipped.forEach(t => {
+                                    t.classList.remove('flipped');
+                                    t.textContent = '';
+                                });
+                                flipped = [];
+                            }, 600);
+                        }
                     }
                 };
                 grid.appendChild(tile);
             });
         }
 
+        // Level 2 RPS
         function playRPS(user) {
             const pc = ['✊', '✌️', '🖐️'][Math.floor(Math.random()*3)];
             document.getElementById('rps-display').innerText = `${user} vs ${pc}`;
@@ -137,6 +192,7 @@
             }
         }
 
+        // Level 3 Bird
         function initFlappy() {
             isFlappyRunning = false;
             const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
@@ -173,6 +229,7 @@
             run();
         }
 
+        // Level 4 Catch
         function startCatchGame() {
             const canvas = document.getElementById('catchCanvas'); const ctx = canvas.getContext('2d');
             let bunnyX = 150; let score = 0; let cakes = []; let speed = 3.2;
@@ -224,5 +281,3 @@
     </script>
 </body>
 </html>
-
-
