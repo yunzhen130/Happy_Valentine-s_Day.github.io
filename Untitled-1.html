@@ -11,14 +11,12 @@
         .menu-btn { background-color: #ff4d6d; color: white; border: none; padding: 15px; border-radius: 25px; margin: 10px auto; cursor: pointer; font-size: 16px; width: 100%; display: block; transition: 0.3s; font-weight: bold; }
         .menu-btn:disabled { background-color: #ffb3c1; cursor: not-allowed; opacity: 0.7; }
         
-        /* 增加最小高度防止塌陷 */
         .grid-container { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
             gap: 8px; 
             margin-top: 15px; 
             min-height: 250px; 
-            visibility: visible !important;
         }
 
         .tile { 
@@ -27,20 +25,21 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 28px; /* 稍微加大字體 */
-            color: transparent; 
+            font-size: 28px; 
+            color: transparent; /* 預設隱藏文字 */
             border-radius: 12px; 
             cursor: pointer; 
-            transition: transform 0.4s, background-color 0.2s;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
+            transition: background-color 0.2s, transform 0.2s;
+            user-select: none; 
+            -webkit-user-select: none; 
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* 強制顯示內容 */
+        /* 移除 3D 旋轉，改用更穩定的樣式切換防止手機白屏 */
         .tile.flipped { 
             color: #ffffff !important; 
             background-color: #ff85a1 !important; 
-            transform: rotateY(180deg); 
+            transform: scale(1.05); /* 輕微放大取代翻轉，確保手機相容性 */
         }
 
         .rps-btn { font-size: 30px; margin: 5px; background: white; border: 2px solid #ffb6c1; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; }
@@ -53,7 +52,7 @@
 
     <div id="login-box" class="card">
         <h2>❤️ Valentine's Day ❤️</h2>
-        <p>Enter our special date</p>
+        <p>Enter our special date </p>
         <input type="text" id="password" placeholder="YYYYMMDD">
         <button class="menu-btn" onclick="unlock()">Start</button>
     </div>
@@ -94,16 +93,14 @@
     <div id="catch-game" class="card" style="display:none;">
         <h3>Level 4: Tiny Bunny Catch 🐰</h3>
         <p>Score: <span id="catch-score">0</span> / 15</p>
-        <canvas id="catchCanvas" width="300" height="350"></canvas>
+        <p style="font-size: 14px; color: #ff4d6d; margin-bottom: 10px; font-weight: bold;">Slide Bunny to catch cakes! 🎂</p>
         <canvas id="catchCanvas" width="300" height="350"></canvas>
         <button class="back-btn" onclick="backToMenu()">Back</button>
     </div>
 
     <div id="final-message" class="card" style="display:none;">
-        <h2 style="color: #ff0054;">❤️</h2>
-        <p style="text-align: left; line-height: 1.6;">
-            寶！❤️
-        </p>
+        <h2 style="color: #ff0054;">For Hsiu ❤️</h2>
+        <p style="text-align: left; line-height: 1.6;">！❤️</p>
         <button class="menu-btn" onclick="location.reload()">Replay</button>
     </div>
 
@@ -138,7 +135,7 @@
             if (currentProgress >= 5) document.getElementById('btn-final').style.display = 'block';
         }
 
-        // --- Level 1 穩定強化版 ---
+        // --- Level 1 穩定版 ---
         function startMemoryGame() {
             const grid = document.getElementById('grid');
             grid.innerHTML = ''; 
@@ -152,13 +149,14 @@
                 tile.className = 'tile';
                 tile.dataset.icon = icon;
                 
-                tile.onclick = function(e) {
-                    e.preventDefault(); // 防止手機端雙擊縮放
-                    if (this.classList.contains('flipped') || flipped.length === 2) return;
+                const handleFlip = function(e) {
+                    if (e && e.type === 'touchend') e.preventDefault();
+                    if (tile.classList.contains('flipped') || flipped.length === 2) return;
                     
-                    this.classList.add('flipped');
-                    this.textContent = this.dataset.icon; // 使用 textContent 較穩定
-                    flipped.push(this);
+                    // 強制設定樣式，不使用複雜動畫
+                    tile.classList.add('flipped');
+                    tile.textContent = tile.dataset.icon;
+                    flipped.push(tile);
 
                     if (flipped.length === 2) {
                         if (flipped[0].dataset.icon === flipped[1].dataset.icon) {
@@ -179,11 +177,13 @@
                         }
                     }
                 };
+
+                tile.onclick = handleFlip;
+                tile.ontouchend = handleFlip;
                 grid.appendChild(tile);
             });
         }
 
-        // Level 2 RPS
         function playRPS(user) {
             const pc = ['✊', '✌️', '🖐️'][Math.floor(Math.random()*3)];
             document.getElementById('rps-display').innerText = `${user} vs ${pc}`;
@@ -193,7 +193,6 @@
             }
         }
 
-        // Level 3 Bird
         function initFlappy() {
             isFlappyRunning = false;
             const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
@@ -201,6 +200,7 @@
             drawBird(ctx, 50, 150);
             canvas.onclick = (e) => { e.preventDefault(); if(!isFlappyRunning) startFlappyGame(); };
         }
+
         function drawBird(ctx, x, y) {
             ctx.fillStyle = "#6d6d6d"; ctx.beginPath(); ctx.arc(x, y - 12, 5, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#4a4a4a"; ctx.beginPath(); ctx.ellipse(x - 8, y + 2, 12, 6, Math.PI / 6, 0, Math.PI * 2); ctx.fill();
@@ -208,6 +208,7 @@
             ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(x + 4, y - 2, 1.5, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.moveTo(x + 2, y + 1); ctx.quadraticCurveTo(x + 8, y + 8, x + 2, y + 15); ctx.lineTo(x - 1, y + 8); ctx.fill();
         }
+
         function startFlappyGame() {
             isFlappyRunning = true; const canvas = document.getElementById('flappyCanvas'); const ctx = canvas.getContext('2d');
             let bird = { x: 50, y: 150, v: 0, g: 0.18, score: 0 }; let pipes = [];
@@ -230,7 +231,6 @@
             run();
         }
 
-        // Level 4 Catch
         function startCatchGame() {
             const canvas = document.getElementById('catchCanvas'); const ctx = canvas.getContext('2d');
             let bunnyX = 150; let score = 0; let cakes = []; let speed = 3.2;
@@ -282,5 +282,3 @@
     </script>
 </body>
 </html>
-
-
